@@ -1,0 +1,8 @@
+[mysqld]
+plugin-load="audit_log=audit_log.so"
+audit_log_policy=ALL
+audit_log_format=JSON
+audit_log_file={{mysql_audit_log_path}}
+audit_log_rotate_on_size=1024M
+audit_log_rotations=3
+audit_log_include_accounts='root@localhost'

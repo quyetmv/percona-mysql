@@ -1,0 +1,79 @@
+# Template my.cnf for Percona Server 5.7
+# # Edit to your requirements.
+[mysqld]
+
+skip-name-resolve = ON
+server-id = {{ mysql_id }}
+
+user   = mysql
+pid-file = /var/run/mysqld/mysqld.pid
+socket   = /var/run/mysqld/mysqld.sock
+port   = 3306
+basedir    = /usr
+datadir    = {{ mysql_data_dir }}
+tmpdir	 = {{ mysql_tmp_dir }}
+lc-messages-dir  = /usr/share/mysql/english
+explicit_defaults_for_timestamp
+log-error    = {{ mysql_error_log_dir }}/error.log
+
+# Disabling symbolic-links is recommended to prevent assorted security risks
+
+symbolic-links=0
+
+################## Replication configuration ##################
+
+replicate-ignore-db=information_schema
+replicate-ignore-db=performance_schema
+replicate-ignore-db=mysql
+replicate-ignore-db=sys
+
+##################LOG########################
+
+log-bin = {{ mysql_binlog_dir }}/mysql-bin.log
+binlog-ignore-db = information_schema
+binlog-ignore-db = mysql
+gtid_mode = ON
+enforce_gtid_consistency = ON
+
+#InnoDB Tweak
+innodb_buffer_pool_size = {{ mysql_buffer_pool_size }}
+innodb_buffer_pool_instances = 64
+# innodb_buffer_pool_load_at_startup = ON # defualt is enable in mysql 5.7
+innodb_locks_unsafe_for_binlog = 1
+innodb_flush_log_at_trx_commit = 2 # need to run with default value 1
+innodb_flush_method = O_DIRECT # O_DIRECT is compatible with Solaris only
+innodb_log_file_size = 8G
+innodb_log_buffer_size = 8M
+
+#Other Tweak Tunning
+max_connections = 8092
+innodb_flush_neighbors = 0
+table_open_cache = 1024
+table_open_cache_instances=16
+back_log = 1024
+open_files_limit=65535
+tmp_table_size=32M
+max_heap_table_size=32M
+thread_handling=pool-of-threads
+thread_pool_size=128
+max_allowed_packet=1G
+
+#IO Tunning
+innodb_io_capacity=2000
+innodb_io_capacity_max=4000
+
+log_slave_updates
+expire_logs_days=7
+log_error_verbosity = 2
+
+sql_mode=NO_ENGINE_SUBSTITUTION
+default-time-zone = '+07:00'
+log_timestamps = SYSTEM
+
+slow-query-log
+slow_query_log_file = {{ mysql_slow_query_path }}/slow_queries.log
+long_query_time = 5
+
+[client]
+port = 3306
+socket   = /var/run/mysqld/mysqld.sock

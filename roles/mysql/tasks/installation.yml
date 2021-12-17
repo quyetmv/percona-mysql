@@ -1,0 +1,111 @@
+---
+- name: Set discovered Ansible Python interpreter.
+  set_fact:
+    ansible_python_interpreter: python3
+  when: ansible_python_interpreter is not defined
+
+- name: Install common package
+  apt:
+    name:
+      - python-pycurl
+      - percona-toolkit
+      - percona-server-server-5.7
+      - python-mysqldb
+      - python-apt
+      - python-pymysql
+      - python3-apt
+      - python3-pymysql
+      - mysql-client
+      - pmm2-client
+      - nfs-kernel-server
+      - nfs-common
+    state: present
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+  register: install_mysql
+
+- name: Create Mysql configuration file
+  template:
+    src: my.cnf.j2
+    dest: /etc/mysql/my.cnf
+
+- name: Restart mysql service
+  systemd:
+    state: restarted
+    name: mysql
+
+- name: Update mysql root password for all root accounts
+  mysql_user:
+    name: root
+    host: "{{ item }}"
+    password: "{{ mysql_root_password }}"
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+  with_items:
+    - 127.0.0.1
+    - ::1
+    - localhost
+
+- name: Adjust permissions of datadir
+  file:
+    path: "{{ mysql_data_dir }}"
+    owner: "mysql"
+    group: "mysql"
+    mode: 0755
+    state: directory
+
+- name: Adjust permissions of logdir
+  file:
+    path: "{{ mysql_log_dir }}"
+    owner: "mysql"
+    group: "mysql"
+    mode: 0755
+    state: directory
+
+- name: "Adjust permissions of tmpdir"
+  file:
+    path: "{{ mysql_tmp_dir }}"
+    owner: "mysql"
+    group: "mysql"
+    mode: 0755
+    state: directory
+
+- name: Copy config mysqld.cnf
+  template:
+    src: mysqld_tmp.cnf.j2
+    dest: /etc/mysql/percona-server.conf.d/mysqld.cnf
+    backup: yes
+
+- name: Copy mysql.service
+  template:
+    src: mysql.service.j2
+    dest: /lib/systemd/system/mysql.service
+
+- name: Systemctl daemon-reload
+  shell: systemctl daemon-reload
+
+- name: Restart mysql service
+  systemd:
+    state: restarted
+    name: mysql
+    enabled: yes
+
+- name: Install audit log plugin
+  shell: mysql -u root -p{{ mysql_root_password }} -e "INSTALL PLUGIN audit_log SONAME 'audit_log.so';"
+  ignore_errors: yes
+
+- name: Copy config audit.cnf
+  template:
+    src: audit.cnf.j2
+    dest: /etc/mysql/percona-server.conf.d/audit.cnf
+    backup: yes
+
+- name: Copy config validate.cnf
+  template:
+    src: validate.cnf.j2
+    dest: /etc/mysql/percona-server.conf.d/validate.cnf
+    backup: yes
+
+- name: Restart mysql service
+  systemd:
+    state: restarted
+    name: mysql   

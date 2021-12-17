@@ -1,0 +1,51 @@
+---
+- name: Create admin users
+  mysql_user:
+    login_user: root
+    login_password: '{{ mysql_root_password }}'
+    name: "{{ item.name }}"
+    host: '%'
+    password: "{{ item.pass }}"
+    priv: "*.*:ALL,GRANT"
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+  with_items: 
+    - "{{ admin_users }}"
+
+- name: Create replication users
+  mysql_user:
+    login_user: '{{admin_users.name}}'
+    login_password: '{{admin_users.pass}}'
+    name: "{{ item.rep_user }}"
+    host: '%'
+    password: "{{ item.rep_pass }}"
+    priv: "*.*:REPLICATION SLAVE"
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+  with_items: 
+    - "{{ replication_user }}"
+
+- name: Create normal users
+  mysql_user:
+    login_user: '{{admin_users.name}}'
+    login_password: '{{admin_users.pass}}'
+    name: "{{ item.name }}"
+    host: '%'
+    password: "{{ item.pass }}"
+    priv: "{{ item.privi }}"
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+  with_items: 
+    - "{{ normal_users }}"
+  tags:
+    - add_normal_user
+
+- name: Create pmm-user
+  mysql_user:
+    login_user: '{{admin_users.name}}'
+    login_password: '{{admin_users.pass}}'
+    name: "{{ item.name }}"
+    host: '%'
+    password: "{{ item.pass }}"
+    priv: "{{ item.privi }}"
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+  with_items: 
+    - "{{ pmm_user }}"
+

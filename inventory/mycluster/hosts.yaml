@@ -1,0 +1,15 @@
+all:
+  hosts:
+    datanode01:
+      ansible_host: 10.110.88.52
+      mysql_master: 10.110.88.52
+      mysql_id: 101108852
+    datanode02:
+      ansible_host: 10.110.88.53
+      mysql_slave: 10.110.88.53
+      mysql_id: 101108853
+
+mysql:
+  hosts:
+    datanode01:
+    datanode02:

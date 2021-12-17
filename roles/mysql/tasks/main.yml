@@ -1,0 +1,37 @@
+---
+- name: Create log directory
+  file:
+    path: "{{ mysql_log_dir }}"
+    state: directory
+  tags:
+    - mysql
+
+- name: Create tmp directory
+  file: 
+    path: "{{ mysql_tmp_dir }}"
+    state: directory
+  tags:
+    - mysql
+
+- include: installation.yml
+  tags:
+    - mysql
+  when: inventory_hostname in groups.mysql
+
+- include: add-user.yml
+  tags:
+    - mysql
+    - add_mysql_user
+  when: inventory_hostname in groups.mysql
+
+- include: remove-user.yml
+  tags:
+    - mysql
+    - remove_mysql_user
+  when: inventory_hostname in groups.mysql
+
+- include: replicate.yaml
+  tags:
+    - mysql
+    - replicate
+  when: inventory_hostname in groups.mysql

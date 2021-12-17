@@ -1,0 +1,45 @@
+---
+###############################
+# MYSQL
+###############################
+
+mysql_data_dir: /data01/mysql
+mysql_binlog_dir: /data01/log
+mysql_tmp_dir: /data01/tmp
+mysql_error_log_dir: /var/log/mysql
+mysql_audit_log_path: /var/log/mysql
+mysql_buffer_pool_size: "{{ (ansible_memtotal_mb*0.7//1000)|int|abs }}G"
+mysql_slow_query_path: /var/log/mysql
+mysql_root_password: GhfWQl63N^*^
+mysql_master_node: "{%- for host in groups.mysql -%} {%- if hostvars[host]['mysql_master'] is defined -%}{{ hostvars[host]['mysql_master'] }}{%- endif -%} {%- endfor -%}"
+mysql_slave_node: "{%- for host in groups.mysql -%} {%- if hostvars[host]['mysql_slave'] is defined -%} {{ hostvars[host]['mysql_slave'] }} {%- endif -%} {%- endfor -%}"
+
+replication_user:
+  rep_user: repl
+  rep_pass: 9v2t4ye8J3VcUmAl^*^
+
+admin_users:
+  name: admin
+  pass: Gh1MBjN9lhfWQl63N^*^
+  privi: '*.*:ALL,GRANT'
+  servers:
+
+pmm_user:
+  - name: pmm_user
+    pass: H9FbTBlzlSNUxlctcPQj@
+    privi: '*.*:PROCESS,SHOW DATABASES,REPLICATION CLIENT,SUPER,EXECUTE'
+    servers:
+###########user##############
+
+normal_users:
+  - name: hive
+    pass: 1fjhY3CpKgeGppN4M^*^
+    privi: 'metastore.*:ALL'
+  
+  - name: hue
+    pass: 2fjhY3CpKgeGppN4J^*^
+    privi: 'hue.*:ALL'
+
+  - name: sentry
+    pass: 3fjhY3CpKgeGppNMJ^*^
+    privi: 'sentry.*:ALL'

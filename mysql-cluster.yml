@@ -1,0 +1,8 @@
+---
+- hosts: mysql
+  become: yes
+  remote_user: quyetmv
+  gather_facts: yes
+  strategy: linear
+  roles:
+    - mysql

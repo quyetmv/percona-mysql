@@ -1,0 +1,125 @@
+---
+- name: Make sure percona-xtrabackup installed
+  apt:
+    name: percona-xtrabackup-24
+
+- name: Make sure mysql service is stopped on slave node
+  service:
+    name: mysql
+    state: stopped
+  when: inventory_hostname in groups.mysql and hostvars[inventory_hostname]['mysql_slave'] is defined
+
+- name: Archive mysql data
+  shell: "rm -rf {{mysql_data_dir}}/*"
+  when: inventory_hostname in groups.mysql and hostvars[inventory_hostname]['mysql_slave'] is defined
+
+- name: Start listen port receive data from master
+  shell: "nc -l -p 3306 | xbstream -x -C {{mysql_data_dir}} &"
+  register: nc_listen_port
+  when: inventory_hostname in groups.mysql and hostvars[inventory_hostname]['mysql_slave'] is defined
+
+- name: Start steaming data from master node to slave node
+  shell: "innobackupex -u{{admin_users.name}} -p{{admin_users.pass}} --stream=xbstream --parallel=4 /tmp | nc -w 2 {{mysql_slave_node}} 3306"
+  register: nc_streaming_data
+  when: inventory_hostname in groups.mysql and hostvars[inventory_hostname]['mysql_master'] is defined
+
+- name: Check if port 3306 is listening
+  wait_for:
+    port: 3306
+    delay: 5
+    timeout: 30
+    msg: "Timeout waiting for 3306 to respond"
+  register: port_check
+  ignore_errors: yes
+  when: inventory_hostname in groups.mysql and hostvars[inventory_hostname]['mysql_slave'] is defined
+
+- name: Get port status
+  debug:
+    msg: "{{port_check}}"
+  when: inventory_hostname in groups.mysql and hostvars[inventory_hostname]['mysql_slave'] is defined
+
+- name: Prepare backup on slave node
+  shell: innobackupex --use-memory={{mysql_buffer_pool_size}} --apply-log {{mysql_data_dir}}
+  when: inventory_hostname in groups.mysql and hostvars[inventory_hostname]['mysql_slave'] is defined
+
+- name: Change owner and permission data dir
+  shell: chown mysql.mysql -R {{mysql_data_dir}} && chmod 750 -R {{mysql_data_dir}}
+  when: inventory_hostname in groups.mysql and hostvars[inventory_hostname]['mysql_slave'] is defined
+
+- name: Make sure mysql service is running on slave node
+  service:
+    name: mysql
+    state: started
+  when: inventory_hostname in groups.mysql and hostvars[inventory_hostname]['mysql_slave'] is defined
+
+- name: Extract gtid from xtrabackup_info of backup server
+  shell: grep -o "binlog_pos =\(.*\)" {{mysql_data_dir}}/xtrabackup_info |awk -F\' '{print $6}'
+  register: master_gtid
+  when: inventory_hostname in groups.mysql and hostvars[inventory_hostname]['mysql_slave'] is defined
+
+- name: Print gtid
+  debug:
+    msg: "{{master_gtid.stdout}}"
+  when: inventory_hostname in groups.mysql and hostvars[inventory_hostname]['mysql_slave'] is defined
+
+- name: Make sure MySQL slave process stopped
+  mysql_replication:
+    login_user: "{{admin_users.name}}"
+    login_password: "{{admin_users.pass}}"
+    mode: stopslave
+  when: inventory_hostname in groups.mysql and hostvars[inventory_hostname]['mysql_slave'] is defined
+
+- name: Reset master on slave node
+  mysql_replication:
+    login_user: "{{admin_users.name}}"
+    login_password: "{{admin_users.pass}}"
+    mode: resetmaster
+  ignore_errors: yes
+  when: inventory_hostname in groups.mysql and hostvars[inventory_hostname]['mysql_slave'] is defined and ansible_version.full|int == 5
+
+- name: Reset master on slave node
+  shell: mysql -u{{admin_users.name}} -p{{admin_users.pass}} -e "reset master;"
+  when: inventory_hostname in groups.mysql and hostvars[inventory_hostname]['mysql_slave'] is defined
+
+- name: Set gtid_purged
+  mysql_variables:
+    login_user: "{{admin_users.name}}"
+    login_password: "{{admin_users.pass}}"
+    variable: "gtid_purged"
+    value: "{{master_gtid.stdout}}"
+  when: inventory_hostname in groups.mysql and hostvars[inventory_hostname]['mysql_slave'] is defined
+
+- name: Configure MySQL slave process
+  mysql_replication:
+    login_user: "{{admin_users.name}}"
+    login_password: "{{admin_users.pass}}"
+    master_host: "{{ mysql_master_node }}"
+    master_user: "{{ replication_user.rep_user }}"
+    master_password: "{{ replication_user.rep_pass }}"
+    master_auto_position : yes
+    mode: changemaster
+  when: inventory_hostname in groups.mysql and hostvars[inventory_hostname]['mysql_slave'] is defined
+
+- name: Start MySQL slave process
+  mysql_replication:
+    login_user: "{{admin_users.name}}"
+    login_password: "{{admin_users.pass}}"
+    mode: startslave
+  when: inventory_hostname in groups.mysql and hostvars[inventory_hostname]['mysql_slave'] is defined
+
+- name: Sleep for 5 seconds and continue with play
+  wait_for:
+    timeout: 5
+
+- name: Get MySQL slave status
+  mysql_replication:
+    login_user: "{{admin_users.name}}"
+    login_password: "{{admin_users.pass}}"
+    mode: getslave
+  register: replica_status
+  when: inventory_hostname in groups.mysql and hostvars[inventory_hostname]['mysql_slave'] is defined
+
+- name: Replication status
+  debug:
+    msg: "{{replica_status}}"
+  when: inventory_hostname in groups.mysql and hostvars[inventory_hostname]['mysql_slave'] is defined
