@@ -1,7 +1,7 @@
 ---
 - name: Create log directory
   file:
-    path: "{{ mysql_log_dir }}"
+    path: "{{ mysql_binlog_dir }}"
     state: directory
   tags:
     - mysql

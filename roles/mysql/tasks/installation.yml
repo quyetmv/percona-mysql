@@ -34,21 +34,21 @@
     src: my.cnf.j2
     dest: /etc/mysql/my.cnf
 
-- name: Restart mysql service
-  systemd:
-    state: restarted
-    name: mysql
+# - name: Restart mysql service
+#   systemd:
+#     state: restarted
+#     name: mysql
 
-- name: Update mysql root password for all root accounts
-  mysql_user:
-    name: root
-    host: "{{ item }}"
-    password: "{{ mysql_root_password }}"
-    login_unix_socket: /var/run/mysqld/mysqld.sock
-  with_items:
-    - 127.0.0.1
-    - ::1
-    - localhost
+# - name: Update mysql root password for all root accounts
+#   mysql_user:
+#     name: root
+#     host: "{{ item }}"
+#     password: "{{ mysql_root_password }}"
+#     login_unix_socket: /var/run/mysqld/mysqld.sock
+#   with_items:
+#     - 127.0.0.1
+#     - ::1
+#     - localhost
 
 - name: Adjust permissions of datadir
   file:
@@ -60,7 +60,7 @@
 
 - name: Adjust permissions of logdir
   file:
-    path: "{{ mysql_log_dir }}"
+    path: "{{ mysql_binlog_dir }}"
     owner: "mysql"
     group: "mysql"
     mode: 0755
