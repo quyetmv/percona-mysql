@@ -4,6 +4,11 @@
     ansible_python_interpreter: python3
   when: ansible_python_interpreter is not defined
 
+- name: Add Percona repository
+  apt:
+    deb: "https://repo.percona.com/apt/percona-release_latest.{{ansible_distribution_release}}_all.deb"
+    update_cache: yes
+
 - name: Install common package
   apt:
     name:
