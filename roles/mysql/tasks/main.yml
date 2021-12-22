@@ -34,4 +34,4 @@
   tags:
     - mysql
     - replicate
-  when: inventory_hostname in groups.mysql
+  when: inventory_hostname in groups.mysql and mysql_slave is defined

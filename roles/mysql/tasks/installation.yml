@@ -15,6 +15,7 @@
       - python-pycurl
       - percona-toolkit
       - percona-server-server-5.7
+      - percona-xtrabackup-24
       - python-mysqldb
       - python-apt
       - python-pymysql
