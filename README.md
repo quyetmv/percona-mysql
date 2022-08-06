@@ -8,10 +8,10 @@ Push host in group mysql and make sure following variables exist in each host
 - mysql_slave # define mysql slave host
 - mysql_id  # define mysql id
 
-### RUN: 
+#### RUN: 
 ``
 ansible-playbook -i inventories/mycluster/hosts.yaml mysql-cluster.yml
 ``
 
-### Author
+#### Author
 quyetmv@gmail.com
