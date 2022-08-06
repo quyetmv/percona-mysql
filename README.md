@@ -13,5 +13,6 @@ Push host in group mysql and make sure following variables exist in each host
 ansible-playbook -i inventories/mycluster/hosts.yaml mysql-cluster.yml
 ``
 
+
 # Author
 quyetmv@gmail.com
